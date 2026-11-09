@@ -7,3 +7,8 @@ ST-05,Адміністратор університетської ІТ-інфр�
 ST-06,Завідувач кафедри,академія,low,high,neutral,keep_satisfied,PM
 ST-07,Служба інформаційної безпеки академії,академія,low,high,neutral,keep_satisfied,PM
 ST-08,Спонсор проєкту (декан факультету),академія,high,high,supporter,manage_closely,PM
+ST-09,PM (я),команда проєкту,high,high,supporter,manage_closely,PM
+ST-10,BA (бізнес-аналітик),команда проєкту,high,low,supporter,keep_informed,PM
+ST-11,Dev (розробник),команда проєкту,high,low,supporter,keep_informed,PM
+ST-12,QA (інженер з якості),команда проєкту,high,high,supporter,manage_closely,PM
+ST-13,DevOps (інженер з розгортання),команда проєкту,high,low,supporter,keep_informed,PM
