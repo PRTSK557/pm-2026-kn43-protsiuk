@@ -5,3 +5,5 @@ ST-03,Представник бази практики (роботодавець
 ST-04,Працівник бухгалтерії академії,академія,low,high,blocker,keep_satisfied,PM
 ST-05,Адміністратор університетської ІТ-інфраструктури,академія,low,low,neutral,monitor,DevOps
 ST-06,Завідувач кафедри,академія,low,high,neutral,keep_satisfied,PM
+ST-07,Служба інформаційної безпеки академії,академія,low,high,neutral,keep_satisfied,PM
+ST-08,Спонсор проєкту (декан факультету),академія,high,high,supporter,manage_closely,PM
