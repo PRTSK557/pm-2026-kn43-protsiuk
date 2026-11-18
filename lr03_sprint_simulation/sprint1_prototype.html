@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прототип спринта 1: бази практики і заявки</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#1c2630;--muted:#5d6b78;--line:#d8dfe5;--accent:#1f6feb;--ok:#2e7d4f;--warn:#b26a00;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+header h1{font-size:17px;margin:0;flex:1}
+main{max-width:920px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.45;cursor:not-allowed}
+input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;width:100%}
+.row{display:grid;grid-template-columns:1fr 1fr 110px auto;gap:8px;align-items:end}
+label{font-size:12px;color:var(--muted)}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:#eef2f6}
+.tag.full{background:#fdecea;color:var(--bad)}
+.tag.arch{background:#f1f1f1;color:var(--muted)}
+.tag.review{background:#fff4e0;color:var(--warn)}
+.tag.withdrawn{background:#f1f1f1;color:var(--muted)}
+.msg{margin:8px 0 0;padding:8px 10px;border-radius:6px;display:none}
+.msg.err{display:block;background:#fdecea;color:var(--bad)}
+.msg.ok{display:block;background:#e6f4ea;color:var(--ok)}
+.note{font-size:13px;color:var(--muted)}
+.hidden{display:none}
+@media (max-width:640px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Платформа обліку практик — прототип спринта 1 (S-11, S-14, S-03)</h1>
+  <label>Демо-перемикач ролі
+    <select id="role">
+      <option value="admin">Адміністратор платформи (S-11)</option>
+      <option value="student">Студент (S-14, S-03)</option>
+      <option value="supervisor">Керівник практики (бачить заявки)</option>
+    </select>
+  </label>
+  <button id="reset" title="Повернути початкові дані">Скинути дані</button>
+</header>
+<main>
+  <p class="note">Вхід акаунтом академії це історія S-01, вона поза спринтом 1, тому роль тут обирається перемикачем. Дані зберігаються лише у вашому браузері.</p>
+
+  <!-- S-11: адміністратор -->
+  <section id="view-admin">
+    <div class="card">
+      <h2>S-11 · Перелік баз практики</h2>
+      <form id="baseForm" class="row">
+        <input type="hidden" id="editId">
+        <div><label>Назва</label><input id="fName" required></div>
+        <div><label>Контакт</label><input id="fContact" required></div>
+        <div><label>Місць</label><input id="fPlaces" type="number" min="0" required></div>
+        <div><button class="primary" id="saveBtn">Додати базу</button></div>
+      </form>
+      <div id="adminMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Назва</th><th>Контакт</th><th>Місць</th><th>Активних заявок</th><th>Стан</th><th></th></tr></thead>
+        <tbody id="adminList"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- S-14 і S-03: студент -->
+  <section id="view-student" class="hidden">
+    <div class="card" id="listCard">
+      <h2>S-14 · Бази практики</h2>
+      <table>
+        <thead><tr><th>Назва</th><th>Вільних місць</th><th></th></tr></thead>
+        <tbody id="studentList"></tbody>
+      </table>
+    </div>
+    <div class="card hidden" id="baseCard">
+      <button id="backBtn">← До переліку</button>
+      <h2 id="cName" style="margin-top:10px"></h2>
+      <p>Контакт: <span id="cContact"></span><br>Вільних місць: <span id="cFree"></span></p>
+      <button class="primary" id="applyBtn">Подати заявку</button>
+      <span id="noPlaces" class="tag full hidden">Місць немає — заявку подати не можна</span>
+      <div id="studentMsg" class="msg"></div>
+    </div>
+    <div class="card">
+      <h2>S-03 · Мої заявки</h2>
+      <table>
+        <thead><tr><th>База</th><th>Подано</th><th>Статус</th><th></th></tr></thead>
+        <tbody id="myApps"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Керівник: перевірка, що заявку видно -->
+  <section id="view-supervisor" class="hidden">
+    <div class="card">
+      <h2>Заявки студентів (для перевірки S-03)</h2>
+      <table>
+        <thead><tr><th>Студент</th><th>База</th><th>Подано</th><th>Статус</th></tr></thead>
+        <tbody id="supApps"></tbody>
+      </table>
+      <p class="note">Розгляд і закріплення заявки це історія S-05, вона поза спринтом 1.</p>
+    </div>
+  </section>
+</main>
+<script>
+const KEY = "practice-proto-s1";
+const STUDENT = "Студент А. (КН-43)";
+const seed = () => ({
+  seq: 4,
+  bases: [
+    {id:1, name:"ТОВ «СофтСервіс»", contact:"hr@softservice.example", places:3, archived:false},
+    {id:2, name:"ПП «ДатаЛаб»", contact:"+380 44 000 00 00", places:1, archived:false},
+    {id:3, name:"КП «Міськводоканал»", contact:"praktyka@vodokanal.example", places:0, archived:false}
+  ],
+  apps: []
+});
+let db;
+try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch(e) { db = seed(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e) {} };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const activeApps = baseId => db.apps.filter(a => a.baseId === baseId && a.status === "на розгляді").length;
+const free = b => b.places - activeApps(b.id);
+const show = (el, text, kind) => { el.textContent = text; el.className = "msg " + kind; };
+
+function renderAdmin(){
+  $("adminList").innerHTML = db.bases.map(b => `
+    <tr>
+      <td>${esc(b.name)}</td><td>${esc(b.contact)}</td><td>${b.places}</td><td>${activeApps(b.id)}</td>
+      <td>${b.archived ? '<span class="tag arch">архівна</span>' : '<span class="tag">активна</span>'}</td>
+      <td style="white-space:nowrap">
+        <button data-act="edit" data-id="${b.id}">Редагувати</button>
+        <button data-act="arch" data-id="${b.id}">${b.archived ? "Відновити" : "Архівувати"}</button>
+        <button data-act="del" data-id="${b.id}">Видалити</button>
+      </td>
+    </tr>`).join("");
+}
+function renderStudent(){
+  const list = db.bases.filter(b => !b.archived);
+  $("studentList").innerHTML = list.map(b => `
+    <tr>
+      <td>${esc(b.name)}</td>
+      <td>${free(b) > 0 ? free(b) : '<span class="tag full">місць немає</span>'}</td>
+      <td><button data-open="${b.id}">Відкрити картку</button></td>
+    </tr>`).join("") || '<tr><td colspan="3">Активних баз немає</td></tr>';
+  const mine = db.apps.filter(a => a.student === STUDENT);
+  $("myApps").innerHTML = mine.map(a => {
+    const b = db.bases.find(x => x.id === a.baseId);
+    return `<tr><td>${esc(b ? b.name : "—")}</td><td>${a.date}</td>
+      <td><span class="tag ${a.status === "на розгляді" ? "review" : "withdrawn"}">${a.status}</span></td>
+      <td>${a.status === "на розгляді" ? `<button data-withdraw="${a.id}">Відкликати</button>` : ""}</td></tr>`;
+  }).join("") || '<tr><td colspan="4">Заявок ще немає</td></tr>';
+}
+function renderSupervisor(){
+  $("supApps").innerHTML = db.apps.map(a => {
+    const b = db.bases.find(x => x.id === a.baseId);
+    return `<tr><td>${esc(a.student)}</td><td>${esc(b ? b.name : "—")}</td><td>${a.date}</td>
+      <td><span class="tag ${a.status === "на розгляді" ? "review" : "withdrawn"}">${a.status}</span></td></tr>`;
+  }).join("") || '<tr><td colspan="4">Заявок немає</td></tr>';
+}
+function render(){ renderAdmin(); renderStudent(); renderSupervisor(); }
+
+let openId = null;
+function openCard(id){
+  const b = db.bases.find(x => x.id === id); if (!b) return;
+  openId = id;
+  $("listCard").classList.add("hidden"); $("baseCard").classList.remove("hidden");
+  $("cName").textContent = b.name; $("cContact").textContent = b.contact; $("cFree").textContent = Math.max(free(b), 0);
+  const none = free(b) <= 0;
+  $("applyBtn").classList.toggle("hidden", none); $("noPlaces").classList.toggle("hidden", !none);
+  $("studentMsg").className = "msg";
+}
+function closeCard(){ openId = null; $("baseCard").classList.add("hidden"); $("listCard").classList.remove("hidden"); }
+
+$("role").onchange = e => {
+  ["admin","student","supervisor"].forEach(r => $("view-" + r).classList.toggle("hidden", r !== e.target.value));
+  closeCard(); render();
+};
+$("reset").onclick = () => { db = seed(); save(); closeCard(); render(); };
+
+$("baseForm").onsubmit = e => {
+  e.preventDefault();
+  const name = $("fName").value.trim(), contact = $("fContact").value.trim(), places = parseInt($("fPlaces").value, 10);
+  if (!name || !contact || isNaN(places) || places < 0) { show($("adminMsg"), "Заповніть назву, контакт і кількість місць (0 або більше).", "err"); return; }
+  const editId = parseInt($("editId").value, 10);
+  if (editId) { Object.assign(db.bases.find(b => b.id === editId), {name, contact, places}); show($("adminMsg"), "Базу оновлено.", "ok"); }
+  else { db.bases.push({id: db.seq++, name, contact, places, archived:false}); show($("adminMsg"), "Базу додано.", "ok"); }
+  $("baseForm").reset(); $("editId").value = ""; $("saveBtn").textContent = "Додати базу";
+  save(); render();
+};
+$("adminList").onclick = e => {
+  const id = parseInt(e.target.dataset.id, 10), act = e.target.dataset.act; if (!act) return;
+  const b = db.bases.find(x => x.id === id);
+  if (act === "edit") { $("editId").value = id; $("fName").value = b.name; $("fContact").value = b.contact; $("fPlaces").value = b.places; $("saveBtn").textContent = "Зберегти зміни"; }
+  if (act === "arch") { b.archived = !b.archived; show($("adminMsg"), b.archived ? "Базу архівовано: студенти її не бачать." : "Базу відновлено.", "ok"); }
+  if (act === "del") {
+    if (activeApps(id) > 0) { show($("adminMsg"), "Цю базу не можна видалити: на неї є активні заявки. Її можна лише архівувати.", "err"); return; }
+    db.bases = db.bases.filter(x => x.id !== id); show($("adminMsg"), "Базу видалено.", "ok");
+  }
+  save(); render();
+};
+$("studentList").onclick = e => { if (e.target.dataset.open) openCard(parseInt(e.target.dataset.open, 10)); };
+$("backBtn").onclick = () => { closeCard(); renderStudent(); };
+$("applyBtn").onclick = () => {
+  if (db.apps.some(a => a.student === STUDENT && a.status === "на розгляді")) {
+    show($("studentMsg"), "У вас уже є активна заявка. Відкличте її, щоб подати нову.", "err"); return;
+  }
+  const b = db.bases.find(x => x.id === openId);
+  if (!b || b.archived || free(b) <= 0) { show($("studentMsg"), "На цю базу заявку подати не можна.", "err"); return; }
+  db.apps.push({id: Date.now(), student: STUDENT, baseId: b.id, date: new Date().toISOString().slice(0,10), status: "на розгляді"});
+  save(); openCard(b.id); renderStudent();
+  show($("studentMsg"), "Заявку подано, статус «на розгляді». Її бачить керівник практики.", "ok");
+};
+$("myApps").onclick = e => {
+  const id = Number(e.target.dataset.withdraw); if (!id) return;
+  const a = db.apps.find(x => x.id === id); if (a && a.status === "на розгляді") a.status = "відкликано";
+  save(); renderStudent();
+};
+render();
+</script>
+</body>
+</html>
