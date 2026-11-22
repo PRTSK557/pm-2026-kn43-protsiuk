@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Прототип спринта 2: вхід, журнал доступу, сторінка про дані</title>
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--ink:#1c2630;--muted:#5d6b78;--line:#d8dfe5;--accent:#1f6feb;--ok:#2e7d4f;--warn:#b26a00;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+header h1{font-size:17px;margin:0;flex:1}
+main{max-width:920px;margin:0 auto;padding:16px}
+footer{max-width:920px;margin:0 auto;padding:0 16px 24px;font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px}
+.idp{max-width:420px;margin:24px auto;border:2px dashed var(--warn)}
+h2{font-size:16px;margin:0 0 10px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px}
+label{font-size:12px;color:var(--muted);display:block}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:#eef2f6}
+.tag.draft{background:#fff4e0;color:var(--warn)}
+.tag.ok{background:#e6f4ea;color:var(--ok)}
+.msg{margin:8px 0 0;padding:8px 10px;border-radius:6px;display:none}
+.msg.err{display:block;background:#fdecea;color:var(--bad)}
+.msg.ok{display:block;background:#e6f4ea;color:var(--ok)}
+.note{font-size:13px;color:var(--muted)}
+.hidden{display:none}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Платформа обліку практик — прототип спринта 2 (S-01, S-24, S-25)</h1>
+  <span id="who" class="note"></span>
+  <button id="logout" class="hidden">Вийти</button>
+  <button id="reset" title="Повернути початкові дані">Скинути дані</button>
+</header>
+<main>
+  <p class="note">Корпоративного SSO академії ще немає (ризик R-03), тому вхід іде через <b>тестовий провайдер</b> з тим самим сценарієм перенаправлення. Підключення справжнього SSO замінює лише блок «Тестовий провайдер». Дані зберігаються лише у вашому браузері.</p>
+
+  <!-- S-01: вхід -->
+  <section id="v-login">
+    <div class="card">
+      <h2>S-01 · Вхід</h2>
+      <p>Вхід у платформу можливий лише акаунтом академії. Власних логінів і паролів платформа не має.</p>
+      <button class="primary" id="goIdp">Увійти акаунтом академії</button>
+      <div id="loginMsg" class="msg"></div>
+      <p class="note">Користувачів у платформі: <b id="userCount"></b></p>
+    </div>
+  </section>
+
+  <section id="v-idp" class="hidden">
+    <div class="card idp">
+      <h2>Тестовий провайдер входу (замість SSO академії)</h2>
+      <p class="note">Тестові акаунти: student.a@academy.example, student.b@academy.example, kerivnyk@academy.example, ib@academy.example. Будь-яка інша адреса — акаунт поза академією.</p>
+      <label>Акаунт<input id="idpEmail" list="accts" style="width:100%" value="student.a@academy.example"></label>
+      <datalist id="accts"><option>student.a@academy.example</option><option>student.b@academy.example</option><option>kerivnyk@academy.example</option><option>ib@academy.example</option><option>ivan@gmail.com</option></datalist>
+      <p><button class="primary" id="idpOk">Підтвердити і повернутися в платформу</button> <button id="idpCancel">Скасувати</button></p>
+    </div>
+  </section>
+
+  <!-- Кабінети за роллю -->
+  <section id="v-cab" class="hidden">
+    <div class="card">
+      <h2 id="cabTitle"></h2>
+      <table>
+        <thead><tr><th>Студент</th><th>Документ</th><th>Стан</th><th></th></tr></thead>
+        <tbody id="docList"></tbody>
+      </table>
+      <p class="note" id="cabNote"></p>
+    </div>
+    <div class="card hidden" id="docCard">
+      <h2 id="docTitle"></h2>
+      <p id="docBody"></p>
+    </div>
+    <div class="card">
+      <h2>Журнал доступу</h2>
+      <button id="openLog">Відкрити журнал доступу</button>
+      <div id="logDenied" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- S-24: журнал -->
+  <section id="v-log" class="hidden">
+    <div class="card">
+      <h2>S-24 · Журнал доступу до персональних даних</h2>
+      <div class="row">
+        <label>Чиї дані<select id="lgPerson"></select></label>
+        <label>З<input type="date" id="lgFrom"></label>
+        <label>По<input type="date" id="lgTo"></label>
+        <button class="primary" id="lgCsv">Вивантажити CSV</button>
+        <button id="lgBack">До кабінету</button>
+      </div>
+      <div id="lgMsg" class="msg"></div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Дата і час</th><th>Хто</th><th>Чиї дані</th><th>Що переглянуто</th><th>Канал</th></tr></thead>
+        <tbody id="lgRows"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Строки зберігання (затвердження службою ІБ)</h2>
+      <table><thead><tr><th>Вид даних</th><th>Строк</th><th>Стан</th><th></th></tr></thead><tbody id="retAdmin"></tbody></table>
+    </div>
+  </section>
+
+  <!-- Персональне посилання бази -->
+  <section id="v-base" class="hidden">
+    <div class="card">
+      <h2>Угода за персональним посиланням бази</h2>
+      <p id="baseBody"></p>
+      <p class="note">База заходить без акаунта академії (питання R-09 відкрите), але перегляд записано в журнал доступу.</p>
+    </div>
+  </section>
+
+  <!-- S-25: сторінка про дані -->
+  <section id="v-data" class="hidden">
+    <div class="card">
+      <h2>S-25 · Які ваші дані зберігає платформа і як довго</h2>
+      <div id="dataDraft" class="msg err"></div>
+      <table><thead><tr><th>Вид даних</th><th>Що саме</th><th>Строк зберігання</th></tr></thead><tbody id="dataRows"></tbody></table>
+      <p class="note">Сторінка відкривається без входу. Запити щодо персональних даних — службі інформаційної безпеки академії.</p>
+      <button id="dataBack">Повернутися</button>
+    </div>
+  </section>
+
+  <div class="card">
+    <h2>Демо-переходи (не частина платформи)</h2>
+    <p class="note">Посилання з листа на сторінку про дані відкриває її без входу. Посилання бази відкриває угоду студента А.</p>
+    <button id="mailLink">Відкрити посилання з листа: сторінка про дані</button>
+    <button id="baseLink">Відкрити персональне посилання бази</button>
+  </div>
+</main>
+<footer><a href="#" id="dataFooter">Про ваші дані і строки зберігання</a></footer>
+
+<script>
+const KEY = "practice-proto-s2";
+const DOMAIN = "@academy.example";
+const DIRECTORY = { // відповідь провайдера: акаунт → роль у групах академії
+  "student.a@academy.example": {name:"Студент А. (КН-43)", role:"student"},
+  "student.b@academy.example": {name:"Студент Б. (КН-43)", role:"student"},
+  "kerivnyk@academy.example": {name:"Керівник практики від академії", role:"supervisor"},
+  "ib@academy.example": {name:"Служба інформаційної безпеки", role:"admin"}
+};
+const seed = () => ({
+  users: [], session: null, log: [],
+  docs: [
+    {id:6, owner:"student.a@academy.example", kind:"Картка студента", text:"Студент А., КН-43, student.a@academy.example"},
+    {id:7, owner:"student.b@academy.example", kind:"Картка студента", text:"Студент Б., КН-43, student.b@academy.example"},
+    {id:1, owner:"student.a@academy.example", kind:"Заявка", text:"ТОВ «СофтСервіс», статус «на розгляді»"},
+    {id:2, owner:"student.a@academy.example", kind:"Угода", text:"Угода з ТОВ «СофтСервіс», чекає погодження бази"},
+    {id:3, owner:"student.a@academy.example", kind:"Звіт", text:"Щотижневий звіт №1"},
+    {id:4, owner:"student.b@academy.example", kind:"Заявка", text:"ПП «ДатаЛаб», статус «на розгляді»"},
+    {id:5, owner:"student.b@academy.example", kind:"Звіт", text:"Щотижневий звіт №1"}
+  ],
+  retention: [ // пропозиція PM; без затвердження ІБ сторінка — чернетка
+    {kind:"Профіль", what:"ПІБ, група, пошта академії", term:"до випуску + 1 рік", approved:false},
+    {kind:"Заявки", what:"обрана база, статус, дати", term:"до випуску + 1 рік", approved:false},
+    {kind:"Угоди", what:"угода з базою практики", term:"5 років після практики", approved:false},
+    {kind:"Звіти", what:"щотижневі звіти, оцінка", term:"5 років після практики", approved:false},
+    {kind:"Журнал доступу", what:"хто і коли переглядав ваші дані", term:"3 роки", approved:false}
+  ]
+});
+let db;
+try { db = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch(e) { db = seed(); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e) {} };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const name = email => (DIRECTORY[email] || {name:email}).name;
+const me = () => db.session && db.users.find(u => u.email === db.session);
+const show = (el, text, kind) => { el.textContent = text; el.className = "msg " + kind; };
+const pad = n => String(n).padStart(2, "0");
+const stamp = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+function writeLog(author, subject, what, channel){
+  db.log.push({at: stamp(new Date()), author, subject, what, channel}); save();
+}
+let prev = "login";
+function go(view){
+  ["login","idp","cab","log","base","data"].forEach(v => $("v-"+v).classList.toggle("hidden", v !== view));
+  if (view !== "data") prev = view;
+  const u = me();
+  $("who").textContent = u ? `${u.name} · ${u.email}` : "не виконано вхід";
+  $("logout").classList.toggle("hidden", !u);
+  $("userCount").textContent = db.users.length;
+  if (view === "cab") renderCab();
+  if (view === "log") renderLog();
+  if (view === "data") renderData();
+}
+
+// S-01
+$("goIdp").onclick = () => go("idp");
+$("idpCancel").onclick = () => go("login");
+$("idpOk").onclick = () => {
+  const email = $("idpEmail").value.trim().toLowerCase();
+  if (!email.endsWith(DOMAIN) || !DIRECTORY[email]) {
+    go("login");
+    show($("loginMsg"), `Акаунт ${email} не належить академії. Вхід у платформу можливий лише акаунтом академії (${DOMAIN}). Користувача не створено.`, "err");
+    return;
+  }
+  if (!db.users.find(u => u.email === email)) db.users.push({email, ...DIRECTORY[email]});
+  db.session = email; save();
+  $("loginMsg").className = "msg";
+  go("cab");
+};
+$("logout").onclick = () => { db.session = null; save(); go("login"); };
+
+const ROLE_TITLE = {student:"Кабінет студента", supervisor:"Кабінет керівника практики", admin:"Кабінет служби інформаційної безпеки"};
+function visibleDocs(u){
+  if (u.role === "student") return db.docs.filter(d => d.owner === u.email);
+  if (u.role === "supervisor") return db.docs;
+  return [];
+}
+function renderCab(){
+  const u = me(); if (!u) return go("login");
+  $("cabTitle").textContent = ROLE_TITLE[u.role];
+  const docs = visibleDocs(u);
+  $("docList").innerHTML = docs.map(d => `<tr><td>${esc(name(d.owner))}</td><td>${d.kind}</td><td>${esc(d.text)}</td><td><button data-doc="${d.id}">Переглянути</button></td></tr>`).join("")
+    || '<tr><td colspan="4">Документів у цій ролі немає. Журнал доступу — нижче.</td></tr>';
+  $("cabNote").textContent = u.role === "student" ? "Ви бачите лише власні заявки, угоди і звіти." : "";
+  $("docCard").classList.add("hidden");
+  $("logDenied").className = "msg";
+}
+$("docList").onclick = e => {
+  const id = +e.target.dataset.doc; if (!id) return;
+  const u = me(), d = db.docs.find(x => x.id === id);
+  if (!visibleDocs(u).includes(d)) return;
+  writeLog(u.email, d.owner, `${d.kind} #${d.id}`, "кабінет");
+  $("docCard").classList.remove("hidden");
+  $("docTitle").textContent = `${d.kind} · ${name(d.owner)}`;
+  $("docBody").textContent = d.text;
+};
+
+// S-24
+$("openLog").onclick = () => {
+  const u = me();
+  if (u.role !== "admin") {
+    writeLog(u.email, "—", "спроба відкрити журнал доступу (відмовлено)", "кабінет");
+    show($("logDenied"), "Журнал доступу бачить лише роль адміністратора. Спробу записано в журнал.", "err");
+    return;
+  }
+  go("log");
+};
+$("lgBack").onclick = () => go("cab");
+function filtered(){
+  const p = $("lgPerson").value, f = $("lgFrom").value, t = $("lgTo").value;
+  return db.log.filter(r => (!p || r.subject === p || (p === "*" )) && (!f || r.at.slice(0,10) >= f) && (!t || r.at.slice(0,10) <= t));
+}
+function renderLog(){
+  const people = [...new Set(db.docs.map(d => d.owner))];
+  const cur = $("lgPerson").value;
+  $("lgPerson").innerHTML = '<option value="">усі записи</option>' + people.map(p => `<option value="${p}">${esc(name(p))}</option>`).join("");
+  $("lgPerson").value = cur;
+  $("lgRows").innerHTML = filtered().slice().reverse().map(r => `<tr><td>${r.at}</td><td>${esc(name(r.author))}</td><td>${esc(r.subject === "—" ? "—" : name(r.subject))}</td><td>${esc(r.what)}</td><td>${esc(r.channel)}</td></tr>`).join("")
+    || '<tr><td colspan="5">Записів немає</td></tr>';
+  $("retAdmin").innerHTML = db.retention.map((r,i) => `<tr><td>${r.kind}</td><td>${r.term}</td><td>${r.approved ? '<span class="tag ok">затверджено</span>' : '<span class="tag draft">не затверджено</span>'}</td><td><button data-ret="${i}">${r.approved ? "Зняти затвердження" : "Затвердити"}</button></td></tr>`).join("");
+}
+["lgPerson","lgFrom","lgTo"].forEach(id => $(id).onchange = renderLog);
+$("lgCsv").onclick = () => {
+  if (!$("lgPerson").value) { show($("lgMsg"), "Оберіть одну людину: журнал вивантажується по одній людині.", "err"); return; }
+  const rows = filtered();
+  const csv = "at,author,subject,what,channel\n" + rows.map(r => [r.at, r.author, r.subject, r.what, r.channel].map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], {type:"text/csv"}));
+  a.download = `access_log_${$("lgPerson").value}.csv`; a.click();
+  show($("lgMsg"), `CSV вивантажено, записів: ${rows.length}.`, "ok");
+};
+$("retAdmin").onclick = e => {
+  const i = e.target.dataset.ret; if (i === undefined) return;
+  db.retention[i].approved = !db.retention[i].approved; save(); renderLog();
+};
+
+// Персональне посилання бази
+$("baseLink").onclick = () => {
+  const d = db.docs.find(x => x.id === 2);
+  writeLog("ТОВ «СофтСервіс» (посилання бази)", d.owner, `${d.kind} #${d.id}`, "персональне посилання бази");
+  $("baseBody").textContent = `${name(d.owner)}: ${d.text}`;
+  go("base");
+};
+
+// S-25
+function renderData(){
+  const pending = db.retention.filter(r => !r.approved);
+  if (pending.length) show($("dataDraft"), `Чернетка, не опубліковано: строки для «${pending.map(r => r.kind).join("», «")}» ще не затверджені службою інформаційної безпеки.`, "err");
+  else show($("dataDraft"), "Опубліковано: усі строки затверджені службою інформаційної безпеки.", "ok");
+  $("dataRows").innerHTML = db.retention.map(r => `<tr><td>${r.kind}</td><td>${r.what}</td><td>${r.term}${r.approved ? "" : ' <span class="tag draft">чернетка</span>'}</td></tr>`).join("");
+}
+$("dataFooter").onclick = e => { e.preventDefault(); go("data"); };
+$("mailLink").onclick = () => { db.session = null; save(); go("data"); };
+$("dataBack").onclick = () => go(me() ? (prev === "data" ? "cab" : prev) : "login");
+
+$("reset").onclick = () => { db = seed(); save(); go("login"); };
+go(me() ? "cab" : "login");
+</script>
+</body>
+</html>
