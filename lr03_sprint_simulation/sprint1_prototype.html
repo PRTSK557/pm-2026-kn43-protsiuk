@@ -32,7 +32,8 @@ label{font-size:12px;color:var(--muted)}
 .msg.ok{display:block;background:#e6f4ea;color:var(--ok)}
 .note{font-size:13px;color:var(--muted)}
 .hidden{display:none}
-@media (max-width:640px){.row{grid-template-columns:1fr}}
+.nowrap,.tag{white-space:nowrap}
+@media (max-width:640px){.row{grid-template-columns:1fr}main{padding:12px}.card{padding:12px}th,td{padding:6px 4px;font-size:14px}}
 </style>
 </head>
 <body>
@@ -153,7 +154,7 @@ function renderStudent(){
   const mine = db.apps.filter(a => a.student === STUDENT);
   $("myApps").innerHTML = mine.map(a => {
     const b = db.bases.find(x => x.id === a.baseId);
-    return `<tr><td>${esc(b ? b.name : "—")}</td><td>${a.date}</td>
+    return `<tr><td>${esc(b ? b.name : "—")}</td><td class="nowrap">${a.date}</td>
       <td><span class="tag ${a.status === "на розгляді" ? "review" : "withdrawn"}">${a.status}</span></td>
       <td>${a.status === "на розгляді" ? `<button data-withdraw="${a.id}">Відкликати</button>` : ""}</td></tr>`;
   }).join("") || '<tr><td colspan="4">Заявок ще немає</td></tr>';
@@ -161,7 +162,7 @@ function renderStudent(){
 function renderSupervisor(){
   $("supApps").innerHTML = db.apps.map(a => {
     const b = db.bases.find(x => x.id === a.baseId);
-    return `<tr><td>${esc(a.student)}</td><td>${esc(b ? b.name : "—")}</td><td>${a.date}</td>
+    return `<tr><td>${esc(a.student)}</td><td>${esc(b ? b.name : "—")}</td><td class="nowrap">${a.date}</td>
       <td><span class="tag ${a.status === "на розгляді" ? "review" : "withdrawn"}">${a.status}</span></td></tr>`;
   }).join("") || '<tr><td colspan="4">Заявок немає</td></tr>';
 }
@@ -190,6 +191,13 @@ $("baseForm").onsubmit = e => {
   const name = $("fName").value.trim(), contact = $("fContact").value.trim(), places = parseInt($("fPlaces").value, 10);
   if (!name || !contact || isNaN(places) || places < 0) { show($("adminMsg"), "Заповніть назву, контакт і кількість місць (0 або більше).", "err"); return; }
   const editId = parseInt($("editId").value, 10);
+  const norm = s => s.toLowerCase().replace(/\s+/g, " ");
+  const twin = db.bases.find(b => b.id !== editId && norm(b.name) === norm(name));
+  if (twin) {
+    show($("adminMsg"), `База «${twin.name}» уже є в переліку, вдруге її не створено. Відкрито її для редагування.`, "err");
+    $("editId").value = twin.id; $("fName").value = twin.name; $("fContact").value = twin.contact; $("fPlaces").value = twin.places; $("saveBtn").textContent = "Зберегти зміни";
+    return;
+  }
   if (editId) { Object.assign(db.bases.find(b => b.id === editId), {name, contact, places}); show($("adminMsg"), "Базу оновлено.", "ok"); }
   else { db.bases.push({id: db.seq++, name, contact, places, archived:false}); show($("adminMsg"), "Базу додано.", "ok"); }
   $("baseForm").reset(); $("editId").value = ""; $("saveBtn").textContent = "Додати базу";

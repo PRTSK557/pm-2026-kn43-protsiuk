@@ -32,6 +32,8 @@ label{font-size:12px;color:var(--muted);display:block}
 .note{font-size:13px;color:var(--muted)}
 .hidden{display:none}
 a{color:var(--accent)}
+.nowrap,.tag{white-space:nowrap}
+@media (max-width:640px){main{padding:12px}.card{padding:12px}th,td{padding:6px 4px;font-size:14px}}
 </style>
 </head>
 <body>
@@ -255,7 +257,7 @@ function renderLog(){
   const cur = $("lgPerson").value;
   $("lgPerson").innerHTML = '<option value="">усі записи</option>' + people.map(p => `<option value="${p}">${esc(name(p))}</option>`).join("");
   $("lgPerson").value = cur;
-  $("lgRows").innerHTML = filtered().slice().reverse().map(r => `<tr><td>${r.at}</td><td>${esc(name(r.author))}</td><td>${esc(r.subject === "—" ? "—" : name(r.subject))}</td><td>${esc(r.what)}</td><td>${esc(r.channel)}</td></tr>`).join("")
+  $("lgRows").innerHTML = filtered().slice().reverse().map(r => `<tr><td class="nowrap">${r.at}</td><td>${esc(name(r.author))}</td><td>${esc(r.subject === "—" ? "—" : name(r.subject))}</td><td>${esc(r.what)}</td><td>${esc(r.channel)}</td></tr>`).join("")
     || '<tr><td colspan="5">Записів немає</td></tr>';
   $("retAdmin").innerHTML = db.retention.map((r,i) => `<tr><td>${r.kind}</td><td>${r.term}</td><td>${r.approved ? '<span class="tag ok">затверджено</span>' : '<span class="tag draft">не затверджено</span>'}</td><td><button data-ret="${i}">${r.approved ? "Зняти затвердження" : "Затвердити"}</button></td></tr>`).join("");
 }
