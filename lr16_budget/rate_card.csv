@@ -1,1 +1,6 @@
 role,fte,hours,rate,source,note
+PM,0.5,280,448,https://dou.ua/lenta/articles/salary-report-managers-winter-2025/,"Middle PM $2193 проти Middle SE $2450 (DOU, грудень 2024): 0,895 ставки Dev"
+BA,0.25,140,450,https://dou.ua/lenta/articles/salary-report-data-winter-2026/,"Middle Business Analyst $2200 (DOU, грудень 2025) проти Middle SE $2450: 0,90 ставки Dev"
+Dev,2.0,1120,500,https://dou.ua/lenta/articles/salary-report-devops-winter-2025/,"Два розробники на повну ставку одним рядком; база співвідношень, Middle SE $2450 (DOU, грудень 2024)"
+QA,0.5,280,365,https://dou.ua/lenta/articles/salary-report-qa-winter-2026/,"Middle QA $1800 (DOU, грудень 2025) проти Middle SE $2450: 0,73 ставки Dev, найдешевша роль"
+DevOps,0.5,280,590,https://dou.ua/lenta/articles/salary-report-devops-winter-2025/,"Middle DevOps $2900 проти Middle SE $2450 (DOU, грудень 2024): 1,18 ставки Dev, найдорожча роль"
